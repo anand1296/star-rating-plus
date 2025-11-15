@@ -1,14 +1,26 @@
 {
   "name": "star-rating-plus",
   "description": "A simple, flexible star rating component (React + Web Component) with hover color mapping and Tailwind-friendly styling.",
-  "version": "0.1.2",
+  "version": "1.0.0",
   "type": "module",
   "main": "dist/index.cjs.js",
-  "module": "dist/index.esm.js",
+  "module": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
     "dist"
   ],
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./web-component": {
+      "import": "./dist/web-component/registerStar.js",
+      "require": "./dist/web-component/registerStar.cjs.js",
+      "types": "./dist/web-component/registerStar.d.ts"
+    }
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsup",

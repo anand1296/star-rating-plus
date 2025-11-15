@@ -1,11 +1,14 @@
 import { defineConfig } from 'tsup';
 
 export default defineConfig({
-  entry: ['src/index.ts'], // your library entry
-  dts: false,               // emit .d.ts
+  entry: ['src/index.ts'],
   format: ['cjs', 'esm'],
+  dts: true,             // emit types (index.d.ts)
+  splitting: false,
   sourcemap: true,
   clean: true,
-  external: ['react', 'react-dom'], // keep react as peer dep
-  target: 'es2019'
+  target: 'es2019',
+  shims: true,           // helpful for ESM/CJS interop
+  outDir: 'dist',
+  treeshake: true,
 });

@@ -1,7 +1,6 @@
-// src/web-component/registerStar.tsx
-import React from 'react';
 import { createRoot } from 'react-dom/client';
 import StarRating from '../components/StarRating';
+import { createElement } from 'react';
 
 function parseHoverColors(raw?: string) {
   if (!raw) return undefined;
@@ -183,7 +182,7 @@ class StarElement extends HTMLElement {
 
     const props = this.getProps();
     this.reactRoot.render(
-      React.createElement(StarRating, {
+      createElement(StarRating, {
         ...props,
         onChange: (v: number) => {
           this.setAttribute('value', String(v));

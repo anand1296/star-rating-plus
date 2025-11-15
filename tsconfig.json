@@ -1,21 +1,18 @@
 {
   "compilerOptions": {
-    "target": "ES2019",
-    "lib": ["DOM", "ESNext"],
+    "target": "ES2020",
     "module": "ESNext",
-    "moduleResolution": "Node",
-    "jsx": "react-jsx",              /* <- important for parsing .tsx */
-    "declaration": true,             /* allow declaration generation if needed */
+    "lib": ["DOM", "ESNext"],
+    "jsx": "react-jsx",
+    "declaration": true,
     "declarationMap": true,
     "emitDeclarationOnly": false,
     "outDir": "dist",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true,
-    "types": ["jest","@testing-library/jest-dom"]
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true
   },
-  "include": ["src"],
-  "exclude": ["node_modules", "dist"]
+  "include": ["src"]
 }
