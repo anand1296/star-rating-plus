@@ -107,11 +107,19 @@ If you don’t want React, you can use:
 ></star-rating>
 ```
 
-### With Gap or Size
+### Spacing (gap)
 
-```html
-<star-rating total="5" size="48" class="gap-8"></star-rating>
-```
+You can control spacing two ways:
+
+1. If your project uses Tailwind then `className="gap-16"` works — *but only if Tailwind is installed in the host app*.
+2. For guaranteed spacing across any project, use the `gap` prop:
+
+```tsx
+// gap as CSS length
+<StarRating total={5} gap="2rem" />
+
+// gap as number (interpreted as px)
+<StarRating total={5} gap={24} />
 
 ---
 

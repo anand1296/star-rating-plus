@@ -17,12 +17,33 @@ export interface StarRatingProps {
   className?: string;
   /** onChange callback (value: number) */
   onChange?: (value: number) => void;
+  /**
+   * Explicit gap between stars.
+   * Accepts CSS length (e.g. '1rem', '8px') or a number (interpreted as px).
+   * If provided, this takes precedence over relying on Tailwind gap classes from className.
+   */
+  gap?: string | number;
 }
+
+/**
+ * Helper to normalise gap prop into a CSS length string.
+ */
+const normalizeGap = (gap?: string | number | undefined): string | undefined => {
+  if (gap === undefined || gap === null) return undefined;
+  if (typeof gap === 'number') return `${gap}px`;
+  const trimmed = String(gap).trim();
+  // numeric string -> px
+  if (/^\d+$/.test(trimmed)) return `${trimmed}px`;
+  // if contains CSS unit assume it's valid, otherwise fallback to px
+  if (/^[\d.]+(px|rem|em|%)$/.test(trimmed)) return trimmed;
+  // fallback: use as-is
+  return trimmed;
+};
 
 /**
  * StarRating component
  *
- * - total is required (TS enforces it). At runtime we validate and throw if invalid.
+ * - total is required (TS enforces it). At runtime we validate and throw if missing / invalid.
  * - Default hover/selection color is yellow (#ffd055).
  * - If only <StarRating total={3} /> is used it renders 3 empty stars.
  */
@@ -36,6 +57,7 @@ export const StarRating: React.FC<StarRatingProps> = (props) => {
     readOnly = false,
     className,
     onChange,
+    gap,
   } = props;
 
   // Runtime validation: total is required and must be >= 1
@@ -71,7 +93,7 @@ export const StarRating: React.FC<StarRatingProps> = (props) => {
   const groupRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    // If controlled and value is out of range, clamp
+    // If controlled and value is out of range, clamp or warn
     if (isControlled && typeof value === 'number') {
       if (value < 0 || value > total) {
         console.warn('StarRating: controlled `value` out of range; expected 0..total');
@@ -104,8 +126,7 @@ export const StarRating: React.FC<StarRatingProps> = (props) => {
       e.preventDefault();
       commitValue(total);
     } else if (key === 'Enter' || key === ' ') {
-      // Enter/Space do nothing special here because clicks handle selection,
-      // but we prevent page scroll on space.
+      // prevent scrolling on space
       e.preventDefault();
     }
   };
@@ -124,8 +145,8 @@ export const StarRating: React.FC<StarRatingProps> = (props) => {
     return 'transparent';
   };
 
-  // Accessibility: aria-label for each star e.g. "3 star"
-  const starLabel = (i: number) => `${i} star`;
+  // Normalise gap prop to CSS length; if undefined use default '0.5rem'
+  const cssGap = normalizeGap(gap) ?? '0.5rem';
 
   return (
     <div
@@ -135,6 +156,8 @@ export const StarRating: React.FC<StarRatingProps> = (props) => {
       ref={groupRef}
       onKeyDown={handleKeyDown}
       className={`star-rating-root inline-flex items-center ${className ?? ''}`}
+      // apply gap directly via style to ensure spacing even if consumer doesn't have Tailwind
+      style={{ gap: cssGap }}
     >
       {Array.from({ length: total }, (_, idx) => {
         const i = idx + 1;
@@ -145,8 +168,8 @@ export const StarRating: React.FC<StarRatingProps> = (props) => {
             key={i}
             role="radio"
             aria-checked={isChecked}
-            aria-label={starLabel(i)}
-            title={starLabel(i)}
+            aria-label={`${i} star`}
+            title={`${i} star`}
             tabIndex={-1}
             onMouseEnter={() => setHoverIndex(i)}
             onMouseMove={() => setHoverIndex(i)}

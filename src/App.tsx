@@ -37,7 +37,7 @@ export default function App() {
           value={val}
           onChange={setVal}
           hoverColors={colors}
-          className="gap-8"
+          className="gap-4"
           size={36}
         />
         <p className="mt-3 text-sm">Selected value: {val}</p>
@@ -52,7 +52,7 @@ export default function App() {
 
         {/* className on custom element works because the web component reads className / computed style */}
         <star-rating
-          class="inline-flex gap-16"
+          class="inline-flex gap-8"
           hover-colors='["#8B0000","#ff6b6b","#ffd055","#b7eb8f","#237804"]'
         ></star-rating>
       </section>
