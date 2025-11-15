@@ -1,5 +1,5 @@
 {
-  "name": "star-rating",
+  "name": "star-rating-plus",
   "description": "A simple, flexible star rating component (React + Web Component) with hover color mapping and Tailwind-friendly styling.",
   "version": "0.1.0",
   "type": "module",
@@ -12,8 +12,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsup",
-    "build:css": "tailwindcss -i src/index.css -o dist/tailwind.css --minify",
-    "prepare": "npm run build && npm run build:css",
+    "build:css": "node ./scripts/build-css.cjs",
+    "prepare": "",
     "preview": "vite preview"
   },
   "keywords": [
@@ -32,6 +32,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
+    "@tailwindcss/postcss": "^4.1.17",
     "@testing-library/jest-dom": "^6.0.0",
     "@testing-library/react": "^14.0.0",
     "@types/jest": "^29.0.0",
