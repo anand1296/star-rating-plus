@@ -1,203 +1,151 @@
-# ⭐ Star Rating Plus
+# ⭐ star-rating-plus
 
-A fully customizable, framework-agnostic **Star Rating component** that works everywhere:
+A flexible, lightweight **React + Web Component** star rating widget with:
 
-🚀 **React**  
-🔥 **Web Components (Vue, Angular, Svelte, plain HTML)**  
-🎨 **Tailwind-friendly**  
-🎛️ Per-star hover colors  
-🎯 Keyboard accessible  
-🧩 React component + Web Component  
-⚡ Lightweight & fast
-
----
-
-## 📛 Badges
-
-![npm](https://img.shields.io/npm/v/star-rating-plus?color=blue&label=npm%20version)
-![downloads](https://img.shields.io/npm/dm/star-rating-plus)
-![ci](https://github.com/anand1296/star-rating-plus/actions/workflows/auto-publish-on-main.yml/badge.svg)
+- Default yellow hover + selected color  
+- Support for **dynamic per-star colors**  
+- Works **with or without Tailwind**  
+- Zero configuration required  
+- React component **and** Web Component  
+- Fully typed, tree‑shakeable, framework‑agnostic
 
 ---
 
-# 📦 Installation
+## 🚀 Installation
 
 ```bash
 npm install star-rating-plus
-# or
-yarn add star-rating-plus
-# or
-pnpm add star-rating-plus
 ```
 
 ---
 
-# 🚀 Usage Examples
+## ✨ Basic Usage (React)
 
-## 1️⃣ React Usage
+### ⭐ Default — Yellow Rating
+
+If you only specify `total`, you automatically get:
+
+- `total` empty stars
+- Yellow hover + selection
 
 ```tsx
-import React, { useState } from 'react';
-import { StarRating } from 'star-rating-plus';
-import 'star-rating-plus/dist/tailwind.css';
+import { StarRating } from "star-rating-plus";
 
 export default function App() {
-  const [value, setValue] = useState(3);
-  const colors = ['#8B0000', '#ff6b6b', '#ffd055', '#b7eb8f', '#237804'];
-
-  return (
-    <div className="p-10 space-y-4">
-      <StarRating
-        total={5}
-        value={value}
-        onChange={setValue}
-        hoverColors={colors}
-        size={40}
-        className="gap-6"
-      />
-      <p className="text-lg">Selected rating: {value}</p>
-    </div>
-  );
+  return <StarRating total={5} />;
 }
 ```
 
 ---
 
-## 2️⃣ Web Component (Any Framework)
+## 🎨 Dynamic Per‑Star Colors (Multicolor Rating)
+
+You can override default yellow with a color array.
+
+⚠️ **The color array *must match* `total`.**
+
+```tsx
+const colors = [
+  "#d90000", // star 1
+  "#ff6b6b", // star 2
+  "#ffd055", // star 3
+  "#b7eb8f", // star 4
+  "#237804", // star 5
+];
+
+<StarRating total={5} hoverColors={colors} />;
+```
+
+---
+
+## 📌 Controlled Component
+
+```tsx
+const [value, setValue] = useState(3);
+
+<StarRating
+  total={5}
+  value={value}
+  onChange={setValue}
+/>;
+```
+
+---
+
+## 🧩 Props
+
+| Prop | Type | Required | Default | Description |
+|------|------|----------|---------|-------------|
+| `total` | `number` | ✅ Yes | — | Number of stars |
+| `value` | `number` | ❌ No | `0` | Controlled selected value |
+| `defaultValue` | `number` | ❌ No | `0` | Uncontrolled initial value |
+| `onChange` | `(v: number) => void` | ❌ No | — | Called when user selects a star |
+| `hoverColors` | `string[]` | ❌ No | `["#FFD700", ...]` | Must match `total`. Dynamically colors each star |
+| `size` | `number` | ❌ No | `28` | Star size in px |
+| `className` | `string` | ❌ No | — | Host container styling (including `gap-*`) |
+
+---
+
+## 🌐 Using the Web Component
+
+If you don’t want React, you can use:
 
 ```html
-<link rel="stylesheet" href="/node_modules/star-rating-plus/dist/tailwind.css">
+<script type="module">
+  import "star-rating-plus/dist/web.js";
+</script>
 
+<star-rating total="5"></star-rating>
+```
+
+### With Multicolor
+
+```html
 <star-rating
   total="5"
-  size="32"
-  hover-colors='["#8B0000","#ff6b6b","#ffd055","#b7eb8f","#237804"]'
+  hover-colors='["#ff6b6b", "#ffd055", "#b7eb8f", "#237804", "#005500"]'
 ></star-rating>
 ```
 
-### Listen for changes
-
-```js
-document
-  .querySelector('star-rating')
-  .addEventListener('change', (e) => console.log('Value:', e.detail.value));
-```
-
----
-
-# 🎨 Tailwind Styling
-
-Apply Tailwind on the **host element**:
+### With Gap or Size
 
 ```html
-<star-rating class="gap-12"></star-rating>
+<star-rating total="5" size="48" class="gap-8"></star-rating>
 ```
 
-Use arbitrary CSS variables:
+---
+
+## 🎯 Using in Angular
+
+```ts
+// app.module.ts
+import { CUSTOM_ELEMENTS_SCHEMA, NgModule } from "@angular/core";
+
+@NgModule({
+  schemas: [CUSTOM_ELEMENTS_SCHEMA],
+})
+export class AppModule {}
+```
 
 ```html
-<star-rating class="[--sr-star-size:56px]"></star-rating>
+<star-rating total="5"></star-rating>
 ```
 
-Combine spacing + size:
+---
+
+## 🎯 Using in Vue
+
+```ts
+// main.js
+import "star-rating-plus/dist/web.js";
+```
 
 ```html
-<star-rating class="gap-10 [--sr-star-size:50px]"></star-rating>
+<star-rating total="5"></star-rating>
 ```
 
 ---
 
-# ⭐ Examples
+## 📝 License
 
-### Different sizes
-
-```html
-<star-rating size="24"></star-rating>
-<star-rating size="40"></star-rating>
-<star-rating size="64"></star-rating>
-```
-
-### Read-only mode
-
-```html
-<star-rating value="4" read-only></star-rating>
-```
-
----
-
-# ⚙️ API Reference
-
-## React Props
-
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| total | number | 5 | Number of stars |
-| value | number | 0 | Controlled value |
-| defaultValue | number | 0 | Uncontrolled value |
-| size | number | 28 | Star size in px |
-| hoverColors | string[] | — | Per-star hover colors |
-| readOnly | boolean | false | Disable interaction |
-| className | string | — | Tailwind/className |
-| onChange | function | — | Called on value change |
-
----
-
-## Web Component Attributes
-
-| Attribute | Type | Default | Description |
-|----------|------|---------|-------------|
-| total | number | 5 | Number of stars |
-| value | number | 0 | Current rating |
-| default-value | number | 0 | Initial value |
-| size | number | 28 | Star size in px |
-| hover-colors | JSON | — | e.g. ["red","green"] |
-| read-only | boolean | false | Disabled |
-| gap | number | 4 | Spacing |
-
----
-
-# 🎹 Keyboard Support
-
-| Key | Action |
-|-----|--------|
-| ArrowRight | Increase rating |
-| ArrowLeft | Decrease rating |
-| Enter/Space | Confirm |
-| Tab | Navigate |
-
----
-
-# 🛠 Local Development
-
-```bash
-npm install
-npm run dev
-```
-
-Build:
-
-```bash
-npm run build
-npm run build:css
-```
-
-Tests:
-
-```bash
-npm test
-```
-
----
-
-# 🤝 Contributing
-
-1. Fork  
-2. Branch  
-3. `npm run dev`  
-4. PR  
-
----
-
-# 📄 License
-
-MIT © 2025
+MIT © 2025 star-rating-plus team
