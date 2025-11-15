@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<coverage generated="1763184989045" clover="3.2.0">
+  <project timestamp="1763184989045" name="All files">
+    <metrics statements="40" coveredstatements="36" conditionals="43" coveredconditionals="26" methods="15" coveredmethods="13" elements="98" coveredelements="75" complexity="0" loc="40" ncloc="40" packages="1" files="1" classes="1"/>
+    <file name="StarRating.tsx" path="C:\Users\anand\OneDrive\Desktop\Projects\star-rating\src\components\StarRating.tsx">
+      <metrics statements="40" coveredstatements="36" conditionals="43" coveredconditionals="26" methods="15" coveredmethods="13"/>
+      <line num="2" count="1" type="stmt"/>
+      <line num="18" count="1" type="stmt"/>
+      <line num="19" count="1" type="stmt"/>
+      <line num="22" count="10" type="stmt"/>
+      <line num="25" count="1" type="stmt"/>
+      <line num="26" count="38" type="stmt"/>
+      <line num="42" count="1" type="stmt"/>
+      <line num="54" count="10" type="stmt"/>
+      <line num="57" count="10" type="stmt"/>
+      <line num="58" count="10" type="stmt"/>
+      <line num="59" count="10" type="stmt"/>
+      <line num="65" count="10" type="stmt"/>
+      <line num="66" count="4" type="cond" truecount="3" falsecount="0"/>
+      <line num="67" count="1" type="stmt"/>
+      <line num="68" count="3" type="stmt"/>
+      <line num="71" count="13" type="cond" truecount="1" falsecount="1"/>
+      <line num="77" count="10" type="stmt"/>
+      <line num="79" count="0" type="cond" truecount="0" falsecount="1"/>
+      <line num="80" count="0" type="stmt"/>
+      <line num="81" count="0" type="cond" truecount="0" falsecount="4"/>
+      <line num="86" count="10" type="stmt"/>
+      <line num="88" count="48" type="cond" truecount="1" falsecount="0"/>
+      <line num="89" count="25" type="cond" truecount="2" falsecount="0"/>
+      <line num="92" count="23" type="cond" truecount="1" falsecount="1"/>
+      <line num="97" count="10" type="stmt"/>
+      <line num="99" count="1" type="cond" truecount="0" falsecount="1"/>
+      <line num="100" count="1" type="cond" truecount="1" falsecount="0"/>
+      <line num="101" count="1" type="cond" truecount="3" falsecount="1"/>
+      <line num="108" count="10" type="cond" truecount="1" falsecount="1"/>
+      <line num="114" count="10" type="stmt"/>
+      <line num="124" count="1" type="stmt"/>
+      <line num="129" count="48" type="stmt"/>
+      <line num="130" count="48" type="stmt"/>
+      <line num="131" count="48" type="stmt"/>
+      <line num="137" count="2" type="stmt"/>
+      <line num="138" count="2" type="stmt"/>
+      <line num="139" count="1" type="stmt"/>
+      <line num="140" count="1" type="stmt"/>
+      <line num="141" count="0" type="stmt"/>
+      <line num="159" count="1" type="stmt"/>
+    </file>
+  </project>
+</coverage>
