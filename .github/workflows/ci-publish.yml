@@ -1,6 +1,6 @@
 name: CI → Auto Release & Publish
 
-# Run CI on pushes/PRs; release/publish actions happen only on push to main (merge)
+# Run CI on pushes and PRs; the release/publish flow runs when the push is to main
 on:
   push:
     branches: [ main ]
@@ -8,7 +8,7 @@ on:
     branches: [ main ]
 
 permissions:
-  contents: write        # needed to push tags/commits and create releases
+  contents: write       # needed to push commits/tags and create releases
   packages: write
   id-token: write
   checks: write
@@ -21,7 +21,7 @@ jobs:
       matrix:
         node-version: [18.x]
     steps:
-      - name: Checkout (no fetch tags)
+      - name: Checkout (full fetch)
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -38,13 +38,13 @@ jobs:
       - name: Build library (tsup)
         run: npm run build
 
-      - name: Build CSS (tailwind via node script)
+      - name: Build CSS (tailwind/node script)
         run: npm run build:css
 
       - name: Run tests
         run: npm test
 
-      - name: Upload build artifact
+      - name: Upload dist artifact
         uses: actions/upload-artifact@v4
         with:
           name: dist
@@ -54,13 +54,13 @@ jobs:
     name: Release & Publish
     needs: build-and-test
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'   # only run when pushing to main
+    # only run the release/publish job for pushes to main (not PRs)
+    if: github.ref == 'refs/heads/main'
     steps:
-      - name: Checkout (with token to push tags)
+      - name: Checkout (allow pushing back)
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          # enable pushing back using GITHUB_TOKEN (persist-credentials true by default in v4)
           persist-credentials: true
 
       - name: Use Node 18
@@ -72,32 +72,40 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Rebuild (ensure artifacts are present)
+      - name: Rebuild artifacts
         run: |
           npm run build
           npm run build:css
 
+      - name: Configure git user for CI commits
+        run: |
+          # set local repo identity so commits created by the workflow have an author
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
       - name: Bump patch version, commit and create tag
         id: bump
-        # we use npm version to change package.json, create annotated tag and commit
         run: |
-          # choose strategy: patch/minor/major
+          # Bump strategy: patch (change to minor or major if you prefer)
+          # This will:
+          #  - update package.json & package-lock.json
+          #  - create a commit
+          #  - create an annotated tag (e.g. v0.1.2)
           NEW_TAG=$(npm version patch -m "chore(release): %s [skip ci]")
           echo "new_tag=${NEW_TAG}" >> $GITHUB_OUTPUT
-        env:
-          GIT_AUTHOR_NAME: github-actions
-          GIT_AUTHOR_EMAIL: actions@github.com
 
       - name: Push commit and tags back to repo
         run: |
+          # push the bump commit and tag(s)
           git push origin HEAD:main
-          # push tags
           git push --follow-tags origin main
 
-      - name: Create GitHub Release
+      - name: Create GitHub Release from tag
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ steps.bump.outputs.new_tag }}
+          name: ${{ steps.bump.outputs.new_tag }}
+          body: "Automated release created by workflow."
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -111,5 +119,4 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
-          # ensure correct files are included and publish publicly
           npm publish --access public
