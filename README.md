@@ -103,7 +103,7 @@ If you don’t want React, you can use:
 ```html
 <star-rating
   total="5"
-  hover-colors='["#ff6b6b", "#ffd055", "#b7eb8f", "#237804", "#005500"]'
+  hover-colors='["#CD1C18", "#ff6b6b", "#ffd055", "#237804", "#005500"]'
 ></star-rating>
 ```
 

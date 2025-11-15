@@ -135,7 +135,6 @@ export const StarRating: React.FC<StarRatingProps> = (props) => {
       ref={groupRef}
       onKeyDown={handleKeyDown}
       className={`star-rating-root inline-flex items-center ${className ?? ''}`}
-      style={{ gap: '0.5rem' /* default gap; consumers can override with className */ }}
     >
       {Array.from({ length: total }, (_, idx) => {
         const i = idx + 1;

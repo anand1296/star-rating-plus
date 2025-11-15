@@ -1,200 +1,232 @@
-import { createRoot } from 'react-dom/client';
-import StarRating from '../components/StarRating';
-import { createElement } from 'react';
+// src/web-component/registerStar.ts
+// Web component wrapper for <star-rating>
+// - reads host gap (Tailwind gap-* or inline style) and applies it to the inner stars container
+// - supports explicit `gap` attribute (CSS length or plain number -> px)
+// - auto-corrects `classname` -> `class` (React JSX quirk)
+// - observes class/style/attr changes and reapplies gap dynamically
 
-function parseHoverColors(raw?: string) {
-  if (!raw) return undefined;
-  try {
-    const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed)) return parsed;
-  } catch {
-    // ignore
+class StarRatingElement extends HTMLElement {
+  static get observedAttributes() {
+    return ['gap', 'size', 'hover-colors', 'value', 'default-value', 'read-only', 'classname', 'class', 'style', 'total'];
   }
-  return raw.split?.(',').map((s) => s.trim()).filter(Boolean);
-}
 
-function parseSizeToPx(raw?: string): number | undefined {
-  if (!raw) return undefined;
-  const trimmed = String(raw).trim();
-  if (/^[0-9]+$/.test(trimmed)) return Number(trimmed);
-  if (trimmed.endsWith('px')) return parseFloat(trimmed);
-  if (trimmed.endsWith('rem')) {
-    const rem = parseFloat(trimmed);
-    const rootFont = parseFloat(getComputedStyle(document.documentElement).fontSize || '16');
-    return Math.round(rem * rootFont);
-  }
-  const f = parseFloat(trimmed);
-  return Number.isFinite(f) ? f : undefined;
-}
-
-class StarElement extends HTMLElement {
-  private mountNode?: HTMLDivElement;
-  private reactRoot?: ReturnType<typeof createRoot>;
-  private mo?: MutationObserver;
-  private lastComputedSizePx?: number;
+  shadow: ShadowRoot;
+  containerEl: HTMLElement | null = null; // wrapper that holds inner
+  innerEl: HTMLElement | null = null;     // this is the element that contains the star buttons (apply gap here)
+  mo: MutationObserver | null = null;
 
   constructor() {
     super();
-    const shadow = this.attachShadow({ mode: 'open' });
-    const wrapper = document.createElement('div');
-    wrapper.setAttribute('part', 'container');
-    wrapper.style.display = 'inline-flex';
-    wrapper.style.alignItems = 'center';
-    wrapper.style.gap = 'var(--sr-gap, 8px)';
-    wrapper.style.setProperty('--sr-star-size', '28px');
-    shadow.appendChild(wrapper);
-    this.mountNode = wrapper;
-  }
+    this.shadow = this.attachShadow({ mode: 'open' });
 
-  static get observedAttributes() {
-    return ['total', 'value', 'default-value', 'size', 'read-only', 'hover-colors', 'gap', 'style', 'class'];
+    // Template: outer container (for alignment) + inner (where stars are appended)
+    this.shadow.innerHTML = `
+      <style>
+        :host { display: inline-block; }
+        .sr-container { display: inline-flex; align-items: center; }
+        .sr-inner { display: inline-flex; align-items: center; gap: 0.5rem; }
+        .sr-button { background: transparent; border: none; padding: 0; display: inline-flex; align-items: center; justify-content:center; }
+      </style>
+      <div part="container" class="sr-container" style="--sr-star-size:28px;">
+        <div part="inner" class="sr-inner" role="radiogroup"></div>
+      </div>
+    `;
+
+    this.containerEl = this.shadow.querySelector('[part="container"]');
+    this.innerEl = this.shadow.querySelector('[part="inner"]');
   }
 
   connectedCallback() {
-    this.render();
-    this.updateFromHost();
+    // Fix React JSX quirk (className -> classname attribute); copy to actual `class`
+    const classNameAttr = this.getAttribute('classname');
+    if (classNameAttr && !this.hasAttribute('class')) {
+      this.setAttribute('class', classNameAttr);
+      // keep original removed to avoid duplication in the future
+      this.removeAttribute('classname');
+    }
 
-    // Observe host attribute changes (class/style/gap) — React's className updates attribute 'class',
-    // so MutationObserver will pick it up. Still defensive: we check className property as well.
+    // initial render of the stars (calls renderInner which will use attributes)
+    this.renderInner();
+
+    // apply gap to inner (stars wrapper)
+    this.applyGapFromHost();
+
+    // Observe host attribute/class/style changes to reapply gap / re-render if needed
     this.mo = new MutationObserver((mutations) => {
       for (const m of mutations) {
         if (m.type === 'attributes') {
-          const attr = (m).attributeName;
-          if (attr === 'class' || attr === 'style' || attr === 'gap') {
-            this.updateFromHost();
+          const n = m.attributeName;
+          if (n === 'class' || n === 'classname' || n === 'style' || n === 'gap') {
+            this.applyGapFromHost();
+          }
+          if (n === 'hover-colors' || n === 'value' || n === 'default-value' || n === 'size' || n === 'total') {
+            this.renderInner();
           }
         }
       }
     });
-    this.mo.observe(this, { attributes: true, attributeFilter: ['class', 'style', 'gap'] });
+    this.mo.observe(this, { attributes: true, attributeFilter: ['class', 'classname', 'style', 'gap', 'hover-colors', 'value', 'default-value', 'size', 'total'] });
+
+    window.addEventListener('resize', this.onWindowResize);
   }
 
   disconnectedCallback() {
-    this.reactRoot?.unmount();
-    this.mo?.disconnect();
+    if (this.mo) this.mo.disconnect();
+    window.removeEventListener('resize', this.onWindowResize);
   }
 
-  attributeChangedCallback() {
-    this.render();
-    this.updateFromHost();
+  attributeChangedCallback(name: string) {
+    if (name === 'gap' || name === 'class' || name === 'classname' || name === 'style') {
+      this.applyGapFromHost();
+    }
+    if (name === 'hover-colors' || name === 'value' || name === 'default-value' || name === 'size' || name === 'total') {
+      this.renderInner();
+    }
   }
 
-  private updateFromHost() {
-    this.updateGapFromHost();
-    this.updateSizeFromHost();
-  }
+  onWindowResize = () => {
+    this.applyGapFromHost();
+  };
 
-  private updateGapFromHost() {
-    if (!this.mountNode) return;
+  /**
+   * Apply gap to the *inner* element (which directly contains the star buttons).
+   * Precedence:
+   * 1) explicit `gap` attribute (CSS length or plain number -> px)
+   * 2) host computed style `gap` (Tailwind gap-* or inline style)
+   * 3) fallback '0.5rem'
+   */
+  applyGapFromHost() {
+    if (!this.innerEl) return;
 
-    // 1) explicit gap attribute -> accepts numeric (px) or raw string (e.g., "1rem")
+    // 1) explicit attribute
     const gapAttr = this.getAttribute('gap');
-    if (gapAttr) {
-      const gapVal = /^[0-9]+$/.test(gapAttr) ? `${gapAttr}px` : gapAttr;
-      this.mountNode.style.gap = gapVal;
+    if (gapAttr !== null) {
+      const trimmed = gapAttr.trim();
+      const numeric = /^[0-9]+$/.test(trimmed);
+      const cssGap = numeric ? `${trimmed}px` : trimmed;
+      this.innerEl.style.gap = cssGap;
       return;
     }
 
-    // (Note: getComputedStyle will reflect className either way, but reading className helps
-    //  when debug or when some environments don't sync attribute immediately.)
+    // 2) computed style on host
     try {
-      const cs = window.getComputedStyle(this);
-      // prefer computed gap if non-zero
-      const hostGap = cs.getPropertyValue('gap')?.trim();
-      if (hostGap && hostGap !== '0px' && hostGap !== 'normal') {
-        this.mountNode.style.gap = hostGap;
+      const hostStyle = getComputedStyle(this);
+      if (hostStyle && hostStyle.gap && hostStyle.gap !== '0px' && hostStyle.gap !== 'normal') {
+        this.innerEl.style.gap = hostStyle.gap;
         return;
       }
-      // else fallback to css var --sr-gap on host
-      const varGap = cs.getPropertyValue('--sr-gap')?.trim();
-      if (varGap) {
-        this.mountNode.style.gap = varGap;
-        return;
-      }
+
+      // Also consider if user used a Tailwind class like `gap-8` but applied to host while host is display:flex.
+      // getComputedStyle above should have returned it; if not, fallback below.
     } catch {
-      // ignore
+      // getComputedStyle can fail in weird envs — ignore and fallback
     }
 
-    // 3) fallback: default
-    this.mountNode.style.gap = '8px';
+    // 3) fallback
+    this.innerEl.style.gap = '0.5rem';
   }
 
-  private updateSizeFromHost() {
-    if (!this.mountNode) return;
+  /**
+   * Render inner stars based on attributes: total, size, hover-colors, value, default-value.
+   * This is a plain DOM implementation — replace with your actual renderer if you have one.
+   */
+  renderInner() {
+    if (!this.innerEl) return;
 
-    // explicit size attribute
-    const sizeAttr = this.getAttribute('size');
-    if (sizeAttr) {
-      const px = parseSizeToPx(sizeAttr);
-      if (px) {
-        this.mountNode.style.setProperty('--sr-star-size', `${px}px`);
-        this.lastComputedSizePx = px;
-        return;
+    // clear
+    this.innerEl.innerHTML = '';
+
+    const totalAttr = parseInt(this.getAttribute('total') || '5', 10);
+    const total = Number.isFinite(totalAttr) && totalAttr > 0 ? totalAttr : 5;
+    const sizeAttr = parseInt(this.getAttribute('size') || '28', 10);
+    const size = Number.isFinite(sizeAttr) ? sizeAttr : 28;
+
+    // parse hover-colors if provided (expects JSON array string)
+    let hoverColors: string[] | null = null;
+    const hc = this.getAttribute('hover-colors');
+    if (hc) {
+      try {
+        const parsed = JSON.parse(hc);
+        if (Array.isArray(parsed)) hoverColors = parsed.map(String);
+      } catch {
+        hoverColors = null;
       }
     }
 
-    // try computed var --sr-star-size on host (reflects className or inline style)
-    try {
-      const cs = window.getComputedStyle(this);
-      const varVal = cs.getPropertyValue('--sr-star-size')?.trim();
-      const parsed = parseSizeToPx(varVal);
-      if (parsed) {
-        this.mountNode.style.setProperty('--sr-star-size', `${parsed}px`);
-        this.lastComputedSizePx = parsed;
-        return;
-      }
-    } catch {
-      // ignore
+    // default yellow fill for selection/hover if not provided
+    const defaultColor = '#ffd055';
+    const normalizedHoverColors = hoverColors && hoverColors.length >= total
+      ? hoverColors.slice(0, total)
+      : Array(total).fill(defaultColor);
+
+    // create buttons
+    for (let i = 1; i <= total; i++) {
+      const btn = document.createElement('button');
+      btn.className = 'sr-button';
+      btn.setAttribute('aria-label', `${i} star`);
+      btn.setAttribute('role', 'radio');
+      btn.tabIndex = -1;
+      btn.style.width = `${size}px`;
+      btn.style.height = `${size}px`;
+      btn.style.background = 'transparent';
+      btn.style.border = 'none';
+      btn.style.padding = '0';
+
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.setAttribute('width', String(size));
+      svg.setAttribute('height', String(size));
+      svg.setAttribute('viewBox', '0 0 24 24');
+      svg.setAttribute('aria-hidden', 'true');
+      svg.setAttribute('focusable', 'false');
+
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('d', 'M12 .587l3.668 7.431 8.2 1.192-5.934 5.787 1.401 8.168L12 18.896l-7.335 3.869 1.401-8.168L.132 9.21l8.2-1.192z');
+      path.setAttribute('fill', 'transparent');
+      path.setAttribute('stroke', '#d9d9d9');
+      path.setAttribute('stroke-width', '0.5');
+
+      svg.appendChild(path);
+      btn.appendChild(svg);
+
+      // basic hover visual feedback using mouse events — purely visual here
+      btn.addEventListener('mouseenter', () => {
+        // color up to i
+        this.colorStars(i, normalizedHoverColors[i - 1]);
+      });
+      btn.addEventListener('mouseleave', () => {
+        // reset visuals (empty)
+        this.colorStars(0, null);
+      });
+
+      this.innerEl.appendChild(btn);
     }
 
-    // fallback default
-    this.mountNode.style.setProperty('--sr-star-size', '28px');
-    this.lastComputedSizePx = 28;
+    // re-apply gap after DOM change
+    this.applyGapFromHost();
   }
 
-  private getProps() {
-    const total = Number(this.getAttribute('total') ?? 5);
-    const valueAttr = this.getAttribute('value');
-    const value = valueAttr === null ? undefined : Number(valueAttr);
-    const defaultValueAttr = this.getAttribute('default-value');
-    const defaultValue = defaultValueAttr === null ? undefined : Number(defaultValueAttr);
-    const sizeAttr = this.getAttribute('size');
-    const size = sizeAttr ? parseSizeToPx(sizeAttr) : this.lastComputedSizePx;
-    const readOnly = this.hasAttribute('read-only');
-    const hoverColors = parseHoverColors(this.getAttribute('hover-colors') || undefined);
-
-    // read gap from mountNode style and convert to number if px
-    let gapProp: string | number | undefined = undefined;
-    if (this.mountNode) {
-      const v = (this.mountNode as HTMLElement).style.gap;
-      if (v) {
-        const m = v.match(/^([0-9.]+)px$/);
-        gapProp = m ? Number(m[1]) : v;
+  /**
+   * Color stars up to `count` using `color` (if color null -> set transparent)
+   * Simple helper that sets fill on first N paths inside innerEl.
+   */
+  colorStars(count: number, color: string | null) {
+    if (!this.innerEl) return;
+    const buttons = Array.from(this.innerEl.querySelectorAll('button'));
+    buttons.forEach((b, idx) => {
+      const p = b.querySelector('path');
+      if (!p) return;
+      if (count > 0 && idx < count) {
+        p.setAttribute('fill', color ?? 'transparent');
+      } else {
+        p.setAttribute('fill', 'transparent');
       }
-    }
-
-    return { total, value, defaultValue, size, readOnly, hoverColors, gap: gapProp };
-  }
-
-  render() {
-    if (!this.mountNode) return;
-    if (!this.reactRoot) this.reactRoot = createRoot(this.mountNode);
-
-    const props = this.getProps();
-    this.reactRoot.render(
-      createElement(StarRating, {
-        ...props,
-        onChange: (v: number) => {
-          this.setAttribute('value', String(v));
-          this.dispatchEvent(new CustomEvent('change', { detail: { value: v } }));
-        },
-      })
-    );
+    });
   }
 }
 
+// Register if not already
 if (!customElements.get('star-rating')) {
-  customElements.define('star-rating', StarElement);
+  customElements.define('star-rating', StarRatingElement);
 }
 
-export default StarElement;
+export default StarRatingElement;
