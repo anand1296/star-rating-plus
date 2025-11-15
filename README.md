@@ -189,12 +189,6 @@ npm test
 
 ---
 
-# 📝 Changelog
-
-See **CHANGELOG.md**.
-
----
-
 # 🤝 Contributing
 
 1. Fork  
