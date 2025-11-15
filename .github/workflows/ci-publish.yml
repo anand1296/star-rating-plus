@@ -1,6 +1,5 @@
 name: CI → Auto Release & Publish
 
-# Run CI on pushes and PRs; the release/publish flow runs when the push is to main
 on:
   push:
     branches: [ main ]
@@ -8,7 +7,7 @@ on:
     branches: [ main ]
 
 permissions:
-  contents: write       # needed to push commits/tags and create releases
+  contents: write
   packages: write
   id-token: write
   checks: write
@@ -54,7 +53,6 @@ jobs:
     name: Release & Publish
     needs: build-and-test
     runs-on: ubuntu-latest
-    # only run the release/publish job for pushes to main (not PRs)
     if: github.ref == 'refs/heads/main'
     steps:
       - name: Checkout (allow pushing back)
@@ -79,24 +77,65 @@ jobs:
 
       - name: Configure git user for CI commits
         run: |
-          # set local repo identity so commits created by the workflow have an author
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
       - name: Bump patch version, commit and create tag
         id: bump
         run: |
-          # Bump strategy: patch (change to minor or major if you prefer)
-          # This will:
-          #  - update package.json & package-lock.json
-          #  - create a commit
-          #  - create an annotated tag (e.g. v0.1.2)
-          NEW_TAG=$(npm version patch -m "chore(release): %s [skip ci]")
-          echo "new_tag=${NEW_TAG}" >> $GITHUB_OUTPUT
+          set -euo pipefail
+
+          # fetch tags to ensure we can detect existing remote tags
+          git fetch --tags
+
+          # configure local git user in case not set
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          echo "Attempting npm version patch..."
+          # Fast path: try normal npm version patch (creates commit + tag)
+          if NEW_TAG=$(npm version patch -m "chore(release): %s [skip ci]" 2>&1); then
+            echo "Bumped to ${NEW_TAG}"
+            echo "new_tag=${NEW_TAG}" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          echo "npm version failed. Selecting next free patch version..."
+
+          # read current version from package.json
+          CUR_VER=$(node -p "require('./package.json').version")
+          echo "Current version in package.json: $CUR_VER"
+
+          bump_patch() {
+            IFS='.' read -r MAJOR MINOR PATCH <<< "$1"
+            PATCH=$((PATCH + 1))
+            echo "${MAJOR}.${MINOR}.${PATCH}"
+          }
+
+          NEXT_VER=$(bump_patch "$CUR_VER")
+          # find a free tag not present remotely
+          while git rev-parse "v${NEXT_VER}" >/dev/null 2>&1; do
+            echo "Tag v${NEXT_VER} already exists, bumping again..."
+            NEXT_VER=$(bump_patch "$NEXT_VER")
+          done
+
+          echo "Using next free version: $NEXT_VER"
+
+          # update package.json without creating git tag/commit
+          npm version --no-git-tag-version "$NEXT_VER"
+
+          # commit and tag manually
+          git add package.json package-lock.json || true
+          git commit -m "chore(release): v${NEXT_VER} [skip ci]"
+          git tag -a "v${NEXT_VER}" -m "v${NEXT_VER}"
+
+          echo "new_tag=v${NEXT_VER}" >> $GITHUB_OUTPUT
+        env:
+          GIT_AUTHOR_NAME: github-actions
+          GIT_AUTHOR_EMAIL: actions@github.com
 
       - name: Push commit and tags back to repo
         run: |
-          # push the bump commit and tag(s)
           git push origin HEAD:main
           git push --follow-tags origin main
 
