@@ -180,7 +180,10 @@ export const StarRating: React.FC<StarRatingProps> = (props) => {
       onKeyDown={handleKeyDown}
       className={`star-rating-root inline-flex items-center ${className ?? ''}`}
       // Do NOT set gap inline here; gap is managed in applyGapLogic to allow Tailwind to win.
-      style={{ /* gap intentionally managed */ }}
+      style={{ 
+        display: 'inline-flex',
+        alignItems: 'center',
+       }}
     >
       {Array.from({ length: total }, (_, idx) => {
         const i = idx + 1;
