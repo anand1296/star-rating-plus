@@ -36,8 +36,8 @@ export default function App() {
           total={5}
           value={val}
           onChange={setVal}
-          hoverColors={colors}
-          className="gap-4"
+          colors={colors}
+          gap={8}
           size={36}
         />
         <p className="mt-3 text-sm">Selected value: {val}</p>

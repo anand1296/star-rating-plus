@@ -53,7 +53,7 @@ const colors = [
   "#237804", // star 5
 ];
 
-<StarRating total={5} hoverColors={colors} />;
+<StarRating total={5} colors={colors} />;
 ```
 
 ---
@@ -80,7 +80,7 @@ const [value, setValue] = useState(3);
 | `value` | `number` | ❌ No | `0` | Controlled selected value |
 | `defaultValue` | `number` | ❌ No | `0` | Uncontrolled initial value |
 | `onChange` | `(v: number) => void` | ❌ No | — | Called when user selects a star |
-| `hoverColors` | `string[]` | ❌ No | `["#FFD700", ...]` | Must match `total`. Dynamically colors each star |
+| `colors` | `string[]` | ❌ No | `["#FFD700", ...]` | Must match `total`. Dynamically colors each star |
 | `size` | `number` | ❌ No | `28` | Star size in px |
 | `className` | `string` | ❌ No | — | Host container styling (including `gap-*`) |
 

@@ -142,21 +142,21 @@ class StarRatingElement extends HTMLElement {
     const size = Number.isFinite(sizeAttr) ? sizeAttr : 28;
 
     // parse hover-colors if provided (expects JSON array string)
-    let hoverColors: string[] | null = null;
+    let colors: string[] | null = null;
     const hc = this.getAttribute('hover-colors');
     if (hc) {
       try {
         const parsed = JSON.parse(hc);
-        if (Array.isArray(parsed)) hoverColors = parsed.map(String);
+        if (Array.isArray(parsed)) colors = parsed.map(String);
       } catch {
-        hoverColors = null;
+        colors = null;
       }
     }
 
     // default yellow fill for selection/hover if not provided
     const defaultColor = '#ffd055';
-    const normalizedHoverColors = hoverColors && hoverColors.length >= total
-      ? hoverColors.slice(0, total)
+    const normalizedColors = colors && colors.length >= total
+      ? colors.slice(0, total)
       : Array(total).fill(defaultColor);
 
     // create buttons
@@ -191,7 +191,7 @@ class StarRatingElement extends HTMLElement {
       // basic hover visual feedback using mouse events — purely visual here
       btn.addEventListener('mouseenter', () => {
         // color up to i
-        this.colorStars(i, normalizedHoverColors[i - 1]);
+        this.colorStars(i, normalizedColors[i - 1]);
       });
       btn.addEventListener('mouseleave', () => {
         // reset visuals (empty)
